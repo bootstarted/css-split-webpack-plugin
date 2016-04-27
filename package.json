@@ -1,0 +1,44 @@
+{
+  "name": "css-split-webpack-plugin",
+  "version": "0.1.0",
+  "author": "Izaak Schroeder <izaak.schroeder@gmail.com>",
+  "license": "CC0-1.0",
+  "repository": "metalabdesign/css-split-webpack-plugin",
+  "main": "dist/index.js",
+  "keywords": [
+    "webpack-plugin",
+    "postcss"
+  ],
+  "scripts": {
+    "prepublish": "./node_modules/.bin/babel -s inline -d ./dist ./src --source-maps true",
+    "test": "npm run lint && npm run spec",
+    "lint": "eslint .",
+    "spec": "NODE_ENV=test ./node_modules/.bin/_mocha -r adana-dump --compilers js:babel-core/register -R spec --recursive test/spec/**/*.spec.js"
+  },
+  "devDependencies": {
+    "adana-cli": "^0.1.1",
+    "adana-dump": "^0.1.0",
+    "adana-format-lcov": "^0.1.1",
+    "babel-cli": "^6.7.7",
+    "babel-core": "^6.7.7",
+    "babel-preset-metalab": "^0.2.1",
+    "chai": "^3.5.0",
+    "css-loader": "^0.23.1",
+    "eslint": "^2.8.0",
+    "eslint-config-metalab": "^3.1.0",
+    "eslint-plugin-filenames": "^0.2.0",
+    "eslint-plugin-import": "^1.6.0",
+    "eslint-plugin-react": "^4.2.3",
+    "extract-text-webpack-plugin": "^1.0.1",
+    "memory-fs": "^0.3.0",
+    "mocha": "^2.4.5",
+    "style-loader": "^0.13.1",
+    "webpack": "^1.13.0"
+  },
+  "dependencies": {
+    "postcss": "^5.0.19"
+  },
+  "peerDependencies": {
+    "webpack": ">=1"
+  }
+}

@@ -1,0 +1,4 @@
+node_modules
+examples
+*.log
+coverage

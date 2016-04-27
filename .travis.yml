@@ -1,0 +1,34 @@
+sudo: false
+language: node_js
+matrix:
+  include:
+    # Run tests in Node.js 0.12
+    - node_js: '0.12'
+
+    # Run tests in Node.js 4.x
+    - node_js: '4'
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-4.8
+            - g++-4.8
+
+    # Run tests in Node.js 5.x
+    - node_js: '5'
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-4.8
+            - g++-4.8
+
+before_install:
+  # Use GCC 4.8 if it's available
+  - 'if [ ! `which gcc-4.8` == "" ]; then export CXX=g++-4.8 && export CC=gcc-4.8; fi'
+
+after_script:
+  - npm install coveralls
+  - cat ./coverage/coverage.json | ./node_modules/.bin/adana --format lcov | ./node_modules/coveralls/bin/coveralls.js
