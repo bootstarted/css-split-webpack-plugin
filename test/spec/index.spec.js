@@ -67,4 +67,25 @@ describe('CSSSplitWebpackPlugin', () => {
         .to.not.contain('styles.css');
     });
   });
+  it('should allow customization of import name', () => {
+    return webpack({size: 3, imports: 'potato.css'}).then((stats) => {
+      expect(stats).to.not.be.null;
+      expect(stats.assetsByChunkName).to.have.property('main')
+        .to.contain('potato.css');
+    });
+  });
+  it('should allow preservation of the original unsplit file', () => {
+    return webpack({size: 3, imports: false, preserve: true}).then((stats) => {
+      expect(stats).to.not.be.null;
+      expect(stats.assetsByChunkName).to.have.property('main')
+        .to.contain('styles.css');
+    });
+  });
+  it('should give sensible names by default', () => {
+    return webpack({size: 3, imports: true, preserve: true}).then((stats) => {
+      expect(stats).to.not.be.null;
+      expect(stats.assetsByChunkName).to.have.property('main')
+        .to.contain('styles-split.css');
+    });
+  });
 });
