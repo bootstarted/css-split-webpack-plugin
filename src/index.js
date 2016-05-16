@@ -2,6 +2,7 @@ import postcss from 'postcss';
 import chunk from './chunk';
 import SourceMapSource from 'webpack/lib/SourceMapSource';
 import RawSource from 'webpack/lib/RawSource';
+import {interpolateName} from 'loader-utils';
 
 /**
  * Detect if a file should be considered for CSS splitting.
@@ -18,6 +19,47 @@ const isCSS = (name : string) : boolean => /\.css$/.test(name);
 const strip = (str : string) : string => str.replace(/\/$/, '');
 
 /**
+ * Create a function that generates names based on some input. This uses
+ * webpack's name interpolator under the hood, but since webpack's argument
+ * list is all funny this exists just to simplify things.
+ * @param {String} input Name to be interpolated.
+ * @returns {Function} Function to do the interpolating.
+ */
+const nameInterpolator = (input) => ({file, content, index}) => {
+  const res = interpolateName({
+    context: '/',
+    resourcePath: `/${file}`,
+  }, input, {
+    content,
+  }).replace(/\[part\]/g, index + 1);
+  return res;
+};
+
+/**
+ * Normalize the `imports` argument to a function.
+ * @param {Boolean|String} input The name of the imports file, or a boolean
+ * to use the default name.
+ * @param {Boolean} preserve True if the default name should not clash.
+ * @returns {Function} Name interpolator.
+ */
+const normalizeImports = (input, preserve) => {
+  switch (typeof input) {
+  case 'string':
+    return nameInterpolator(input);
+  case 'boolean':
+    if (input) {
+      if (preserve) {
+        return nameInterpolator('[name]-split.[ext]');
+      }
+      return ({file}) => file;
+    }
+    return () => false;
+  default:
+    throw new TypeError();
+  }
+};
+
+/**
  * Webpack plugin to split CSS assets into multiple files. This is primarily
  * used for dealing with IE <= 9 which cannot handle more than ~4000 rules
  * in a single stylesheet.
@@ -26,10 +68,23 @@ export default class CSSSplitWebpackPlugin {
   /**
    * Create new instance of CSSSplitWebpackPlugin.
    * @param {Number} size Maximum number of rules for a single file.
-   * @param {Boolean} imports True to generate an additional import asset.
+   * @param {Boolean|String} imports Truish to generate an additional import
+   * asset. When a boolean use the default name for the asset.
+   * @param {String} filename Control the generated split file name.
+   * @param {Boolean} preserve True to keep the original unsplit file.
    */
-  constructor({size = 4000, imports = false}) {
-    this.options = {size, imports};
+  constructor({
+    size = 4000,
+    imports = false,
+    filename = '[name]-[part].[ext]',
+    preserve,
+  }) {
+    this.options = {
+      size,
+      imports: normalizeImports(imports, preserve),
+      filename: nameInterpolator(filename),
+      preserve,
+    };
   }
 
   /**
@@ -43,10 +98,12 @@ export default class CSSSplitWebpackPlugin {
     const input = asset.sourceAndMap ? asset.sourceAndMap() : {
       source: asset.source(),
     };
-    // Function for generating a new name for the split files.
-    // TODO: Make this configurable.
-    const name = (i) =>
-      key.replace(/(.*)\.css(\..+)?$/, `$1-${i + 1}.css$2`);
+    const name = (i) => this.options.filename({
+      ...asset,
+      content: input.source,
+      file: key,
+      index: i,
+    });
     return postcss([chunk({
       ...this.options,
       result: (i) => {
@@ -107,14 +164,20 @@ export default class CSSSplitWebpackPlugin {
                 assets[file._name] = file;
                 chunk.files.push(file._name);
               });
-              // Remove or rewrite the existing file.
-              if (this.options.imports) {
-                assets[entry.file] = new RawSource(entry.chunks.map((file) => {
-                  return `@import "${publicPath}/${file._name}";`;
-                }).join('\n'));
-              } else {
+              const content = entry.chunks.map((file) => {
+                return `@import "${publicPath}/${file._name}";`;
+              }).join('\n');
+              const imports = this.options.imports({
+                ...entry,
+                content,
+              });
+              if (!this.options.preserve) {
                 chunk.files.splice(chunk.files.indexOf(entry.file), 1);
                 delete assets[entry.file];
+              }
+              if (imports) {
+                assets[imports] = new RawSource(content);
+                chunk.files.push(imports);
               }
             });
             return Promise.resolve();
