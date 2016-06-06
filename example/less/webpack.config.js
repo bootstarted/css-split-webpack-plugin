@@ -1,5 +1,5 @@
 var ExtractTextPlugin = require('extract-text-webpack-plugin');
-var CSSSplitWebpackPlugin = require('../').default;
+var CSSSplitWebpackPlugin = require('../../').default;
 
 module.exports = {
   entry: './index.js',
@@ -11,12 +11,15 @@ module.exports = {
   },
   module: {
     loaders: [{
-      test: /\.css$/,
-      loader: ExtractTextPlugin.extract('style-loader', 'css-loader'),
+      test: /\.less$/,
+      loader: ExtractTextPlugin.extract(
+        'css?-url&-autoprefixer&sourceMap!less?sourceMap'
+      ),
     }],
   },
+  devtool: 'source-map',
   plugins: [
     new ExtractTextPlugin("styles.css"),
-    new CSSSplitWebpackPlugin({size: 3, imports: true}),
+    new CSSSplitWebpackPlugin({size: 3}),
   ],
 };
