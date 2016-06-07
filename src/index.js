@@ -104,20 +104,10 @@ export default class CSSSplitWebpackPlugin {
       file: key,
       index: i,
     });
-    return postcss([chunk({
-      ...this.options,
-      result: (i) => {
-        return {
-          to: name(i),
-          from: key,
-          map: {
-            inline: false,
-            prev: input.map,
-          },
-        };
+    return postcss([chunk(this.options)]).process(input.source, {
+      map: {
+        prev: input.map,
       },
-    })]).process(input.source, {
-      from: key,
     }).then((result) => {
       return Promise.resolve({
         file: key,

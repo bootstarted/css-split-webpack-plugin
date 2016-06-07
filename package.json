@@ -19,6 +19,7 @@
     "adana-cli": "^0.1.1",
     "adana-dump": "^0.1.0",
     "adana-format-lcov": "^0.1.1",
+    "autoprefixer-loader": "^3.2.0",
     "babel-cli": "^6.7.7",
     "babel-core": "^6.7.7",
     "babel-preset-metalab": "^0.2.1",
@@ -30,9 +31,12 @@
     "eslint-plugin-import": "^1.6.0",
     "eslint-plugin-react": "^4.2.3",
     "extract-text-webpack-plugin": "^1.0.1",
+    "less": "^2.7.1",
+    "less-loader": "^2.2.3",
     "memory-fs": "^0.3.0",
     "mocha": "^2.4.5",
     "style-loader": "^0.13.1",
+    "url-loader": "^0.5.7",
     "webpack": "^1.13.0"
   },
   "dependencies": {
