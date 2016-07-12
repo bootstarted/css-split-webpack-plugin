@@ -9,7 +9,7 @@ const getSelLength = (node) => {
   if (node.type === 'rule') {
     return node.selectors.length;
   }
-  if (node.type === 'atrule') {
+  if (node.type === 'atrule' && node.nodes) {
     return 1 + node.nodes.reduce((memo, n) => {
       return memo + getSelLength(n);
     }, 0);
