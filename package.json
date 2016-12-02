@@ -41,7 +41,8 @@
   },
   "dependencies": {
     "loader-utils": "^0.2.15",
-    "postcss": "^5.0.19"
+    "postcss": "^5.0.19",
+    "webpack-sources": "^0.1.3"
   },
   "peerDependencies": {
     "webpack": ">=1"
