@@ -1,6 +1,6 @@
 import postcss from 'postcss';
 import chunk from './chunk';
-import SourceMapSource from 'webpack/lib/SourceMapSource';
+import {SourceMapSource} from 'webpack-sources';
 import RawSource from 'webpack/lib/RawSource';
 import {interpolateName} from 'loader-utils';
 
