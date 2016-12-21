@@ -12,7 +12,12 @@ module.exports = {
   module: {
     loaders: [{
       test: /\.css$/,
-      loader: ExtractTextPlugin.extract('style-loader', 'css-loader'),
+      loader: ExtractTextPlugin.extract.length !== 1 ?
+        ExtractTextPlugin.extract('style-loader', 'css-loader') :
+        ExtractTextPlugin.extract({
+          fallbackLoader: 'style-loader',
+          loader: 'css-loader',
+        }),
     }],
   },
   devtool: 'source-map',

@@ -8,6 +8,15 @@ import {expect} from 'chai';
 const basic = path.join('.', 'basic', 'index.js');
 const less = path.join('.', 'less', 'index.js');
 
+const extract = ExtractTextPlugin.extract.length !== 1 ?
+  (a, b) => ExtractTextPlugin.extract(a, b) :
+  (fallbackLoader, loader) => loader ? ExtractTextPlugin.extract({
+    fallbackLoader,
+    loader,
+  }) : ExtractTextPlugin.extract({
+    loader: fallbackLoader,
+  });
+
 const config = (options, entry = basic, extra) => {
   return {
     entry: path.join(__dirname, '..', '..', 'example', entry),
@@ -20,13 +29,13 @@ const config = (options, entry = basic, extra) => {
     module: {
       loaders: [{
         test: /\.css$/,
-        loader: ExtractTextPlugin.extract(
+        loader: extract(
           'style-loader',
           'css-loader?sourceMap'
         ),
       }, {
         test: /\.less$/,
-        loader: ExtractTextPlugin.extract(
+        loader: extract(
           'css?-url&-autoprefixer&sourceMap!less?sourceMap'
         ),
       }],
