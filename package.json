@@ -1,6 +1,6 @@
 {
   "name": "css-split-webpack-plugin",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": "Izaak Schroeder <izaak.schroeder@gmail.com>",
   "license": "CC0-1.0",
   "repository": "metalabdesign/css-split-webpack-plugin",
