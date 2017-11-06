@@ -137,7 +137,7 @@ export default class CSSSplitWebpackPlugin {
     compiler.plugin('this-compilation', (compilation) => {
       const assets = compilation.assets;
       const publicPath = strip(compilation.options.output.publicPath || './');
-      compilation.plugin('optimize-chunk-assets', (chunks, done) => {
+      compilation.plugin('after-optimize-chunk-assets', (chunks, done) => {
         const promises = chunks.map((chunk) => {
           const input = chunk.files.filter(isCSS);
           const items = input.map((name) => this.file(name, assets[name]));
