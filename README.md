@@ -55,6 +55,8 @@ The following configuration options are available:
 
 **preserve**: `default: false`. Keep the original unsplit file as well. Sometimes this is desirable if you want to target a specific browser (IE) with the split files and then serve the unsplit ones to everyone else.
 
+**defer**: `default: 'false'`. You can pass `true` here to cause this plugin to split the CSS on the `emit` phase. Sometimes this is needed if you have other plugins that operate on the CSS also in the emit phase. Unfortunately by doing this you potentially lose chunk linking and source maps. Use only when necessary.
+
 [webpack]: http://webpack.github.io/
 [herp]: https://github.com/ONE001/css-file-rules-webpack-separator
 [postcss]: https://github.com/postcss/postcss
