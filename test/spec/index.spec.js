@@ -133,10 +133,36 @@ describe('CSSSplitWebpackPlugin', () => {
       expect(files).to.not.have.property('styles-1.css.map');
     })
   );
-
   it('should fail with bad imports', () => {
     expect(() =>
       new CSSSplitWebpackPlugin({imports: () => {}})
     ).to.throw(TypeError);
+  });
+  describe('compilerPhase emit', () => {
+    it('should split css files when necessary', (done) => {
+      webpack({size: 3, compilerPhase: 'emit'}).then(({stats, files}) => {
+        expect(stats.assetsByChunkName)
+          .to.have.property('main')
+          .to.contain('styles-1.css')
+          .to.contain('styles-2.css');
+        expect(files).to.have.property('styles-1.css');
+        expect(files).to.have.property('styles-2.css');
+        expect(files).to.have.property('styles.css.map');
+        done();
+      });
+    });
+    it('should ignore files that do not need splitting', (done) => {
+      webpack({size: 10, compilerPhase: 'emit'}).then(({stats, files}) => {
+        expect(stats.assetsByChunkName)
+          .to.have.property('main')
+          .to.contain('styles.css')
+          .to.not.contain('styles-1.css')
+          .to.not.contain('styles-2.css');
+        expect(files).to.have.property('styles.css');
+        expect(files).to.not.have.property('styles-1.css');
+        expect(files).to.not.have.property('styles-2.css');
+        done();
+      });
+    });
   });
 });
