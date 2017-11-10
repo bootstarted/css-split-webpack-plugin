@@ -1,5 +1,4 @@
-{
-  "extends": [
-    "metalab"
-  ]
-}
+extends:
+  - metalab
+rules:
+  metalab/filenames/match-exported: 0

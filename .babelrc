@@ -1,5 +1,23 @@
 {
+  "env": {
+    "test": {
+      "plugins": [
+        ["transform-adana", {
+          "only": "src/**"
+        }]
+      ]
+    }
+  },
+  "plugins": [
+    "syntax-object-rest-spread",
+    "transform-object-rest-spread"
+  ],
   "presets": [
-    "metalab"
+    ["env", {
+      "targets": {
+        "node": 4
+      }
+    }],
+    "flow"
   ]
 }
