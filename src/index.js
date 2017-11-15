@@ -70,6 +70,9 @@ export default class CSSSplitWebpackPlugin {
    * @param {Boolean|String} imports Truish to generate an additional import
    * asset. When a boolean use the default name for the asset.
    * @param {String} filename Control the generated split file name.
+   * @param {Boolean} defer Defer splitting until the `emit` phase. Normally
+   * only needed if something else in your pipeline is mangling things at
+   * the emit phase too.
    * @param {Boolean} preserve True to keep the original unsplit file.
    */
   constructor({
@@ -77,12 +80,14 @@ export default class CSSSplitWebpackPlugin {
     imports = false,
     filename = '[name]-[part].[ext]',
     preserve,
+    defer = false,
   }) {
     this.options = {
       size,
       imports: normalizeImports(imports, preserve),
       filename: nameInterpolator(filename),
       preserve,
+      defer,
     };
   }
 
@@ -121,6 +126,48 @@ export default class CSSSplitWebpackPlugin {
     });
   }
 
+  chunksMapping(compilation, chunks, done) {
+    const assets = compilation.assets;
+    const publicPath = strip(compilation.options.output.publicPath || './');
+    const promises = chunks.map((chunk) => {
+      const input = chunk.files.filter(isCSS);
+      const items = input.map((name) => this.file(name, assets[name]));
+      return Promise.all(items).then((entries) => {
+        entries.forEach((entry) => {
+          // Skip the splitting operation for files that result in no
+          // split occuring.
+          if (entry.chunks.length === 1) {
+            return;
+          }
+          // Inject the new files into the chunk.
+          entry.chunks.forEach((file) => {
+            assets[file._name] = file;
+            chunk.files.push(file._name);
+          });
+          const content = entry.chunks.map((file) => {
+            return `@import "${publicPath}/${file._name}";`;
+          }).join('\n');
+          const imports = this.options.imports({
+            ...entry,
+            content,
+          });
+          if (!this.options.preserve) {
+            chunk.files.splice(chunk.files.indexOf(entry.file), 1);
+            delete assets[entry.file];
+          }
+          if (imports) {
+            assets[imports] = new RawSource(content);
+            chunk.files.push(imports);
+          }
+        });
+        return Promise.resolve();
+      });
+    });
+    Promise.all(promises).then(() => {
+      done();
+    }, done);
+  }
+
   /**
    * Run the plugin against a webpack compiler instance. Roughly it walks all
    * the chunks searching for CSS files and when it finds one that needs to be
@@ -132,50 +179,21 @@ export default class CSSSplitWebpackPlugin {
    * @returns {void}
    */
   apply(compiler : Object) {
-    // Only run on `this-compilation` to avoid injecting the plugin into
-    // sub-compilers as happens when using the `extract-text-webpack-plugin`.
-    compiler.plugin('this-compilation', (compilation) => {
-      const assets = compilation.assets;
-      const publicPath = strip(compilation.options.output.publicPath || './');
-      compilation.plugin('optimize-chunk-assets', (chunks, done) => {
-        const promises = chunks.map((chunk) => {
-          const input = chunk.files.filter(isCSS);
-          const items = input.map((name) => this.file(name, assets[name]));
-          return Promise.all(items).then((entries) => {
-            entries.forEach((entry) => {
-              // Skip the splitting operation for files that result in no
-              // split occuring.
-              if (entry.chunks.length === 1) {
-                return;
-              }
-              // Inject the new files into the chunk.
-              entry.chunks.forEach((file) => {
-                assets[file._name] = file;
-                chunk.files.push(file._name);
-              });
-              const content = entry.chunks.map((file) => {
-                return `@import "${publicPath}/${file._name}";`;
-              }).join('\n');
-              const imports = this.options.imports({
-                ...entry,
-                content,
-              });
-              if (!this.options.preserve) {
-                chunk.files.splice(chunk.files.indexOf(entry.file), 1);
-                delete assets[entry.file];
-              }
-              if (imports) {
-                assets[imports] = new RawSource(content);
-                chunk.files.push(imports);
-              }
-            });
-            return Promise.resolve();
-          });
-        });
-        Promise.all(promises).then(() => {
-          done();
-        }, done);
+    if (this.options.defer) {
+      // Run on `emit` when user specifies the compiler phase
+      // Due to the incorrect css split + optimization behavior
+      // Expected: css split should happen after optimization
+      compiler.plugin('emit', (compilation, done) => {
+        return this.chunksMapping(compilation, compilation.chunks, done);
       });
-    });
+    } else {
+      // Only run on `this-compilation` to avoid injecting the plugin into
+      // sub-compilers as happens when using the `extract-text-webpack-plugin`.
+      compiler.plugin('this-compilation', (compilation) => {
+        compilation.plugin('optimize-chunk-assets', (chunks, done) => {
+          return this.chunksMapping(compilation, chunks, done);
+        });
+      });
+    }
   }
 }
