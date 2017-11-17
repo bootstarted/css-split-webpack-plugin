@@ -119,7 +119,7 @@ export default class CSSSplitWebpackPlugin {
           return new SourceMapSource(
             css,
             name(i),
-            map.toString()
+            map && map.toString()
           );
         }),
       });
