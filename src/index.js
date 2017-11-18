@@ -102,7 +102,7 @@ export default class CSSSplitWebpackPlugin {
     const input = asset.sourceAndMap ? asset.sourceAndMap() : {
       source: asset.source(),
     };
-    const name = (i) => this.options.filename({
+    const getName = (i) => this.options.filename({
       ...asset,
       content: input.source,
       file: key,
@@ -116,11 +116,14 @@ export default class CSSSplitWebpackPlugin {
       return Promise.resolve({
         file: key,
         chunks: result.chunks.map(({css, map}, i) => {
-          return new SourceMapSource(
+          const name = getName(i);
+          const result = map ? new SourceMapSource(
             css,
-            name(i),
+            name,
             map.toString()
-          );
+          ) : new RawSource(css);
+          result.name = name;
+          return result;
         }),
       });
     });
@@ -141,8 +144,8 @@ export default class CSSSplitWebpackPlugin {
           }
           // Inject the new files into the chunk.
           entry.chunks.forEach((file) => {
-            assets[file._name] = file;
-            chunk.files.push(file._name);
+            assets[file.name] = file;
+            chunk.files.push(file.name);
           });
           const content = entry.chunks.map((file) => {
             return `@import "${publicPath}/${file._name}";`;

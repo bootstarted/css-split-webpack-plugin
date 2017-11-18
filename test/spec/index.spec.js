@@ -1,5 +1,6 @@
 import _webpack from 'webpack';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
+import OptimizeCssPlugin from 'optimize-css-assets-webpack-plugin';
 import CSSSplitWebpackPlugin from '../../src';
 import path from 'path';
 import MemoryFileSystem from 'memory-fs';
@@ -17,7 +18,10 @@ const extract = ExtractTextPlugin.extract.length !== 1 ?
     loader: fallbackLoader,
   });
 
-const config = (options, entry = basic, extra) => {
+const config = (options, entry = basic, {
+  plugins,
+  ...extra
+} = {devtool: 'source-map'}) => {
   return {
     entry: path.join(__dirname, '..', '..', 'example', entry),
     context: path.join(__dirname, '..', '..', 'example'),
@@ -40,10 +44,10 @@ const config = (options, entry = basic, extra) => {
         ),
       }],
     },
-    devtool: 'source-map',
     plugins: [
       new ExtractTextPlugin('styles.css'),
       new CSSSplitWebpackPlugin(options),
+      ...(plugins || []),
     ],
     ...extra,
   };
@@ -139,7 +143,7 @@ describe('CSSSplitWebpackPlugin', () => {
     ).to.throw(TypeError);
   });
   describe('deferred emit', () => {
-    it('should split css files when necessary', (done) => {
+    it('should split css files when necessary', () =>
       webpack({size: 3, defer: true}).then(({stats, files}) => {
         expect(stats.assetsByChunkName)
           .to.have.property('main')
@@ -148,10 +152,9 @@ describe('CSSSplitWebpackPlugin', () => {
         expect(files).to.have.property('styles-1.css');
         expect(files).to.have.property('styles-2.css');
         expect(files).to.have.property('styles.css.map');
-        done();
-      });
-    });
-    it('should ignore files that do not need splitting', (done) => {
+      })
+    );
+    it('should ignore files that do not need splitting', () =>
       webpack({size: 10, defer: true}).then(({stats, files}) => {
         expect(stats.assetsByChunkName)
           .to.have.property('main')
@@ -161,8 +164,23 @@ describe('CSSSplitWebpackPlugin', () => {
         expect(files).to.have.property('styles.css');
         expect(files).to.not.have.property('styles-1.css');
         expect(files).to.not.have.property('styles-2.css');
-        done();
-      });
-    });
+      })
+    );
+    it('should handle cases when there are no source maps', () =>
+      webpack({
+        size: 3,
+        defer: true,
+      }, basic, {
+        devtool: null,
+        plugins: [
+          new OptimizeCssPlugin(),
+        ],
+      }).then(({stats, files}) => {
+        expect(files).to.not.have.property('styles-1.css.map');
+        expect(stats.assetsByChunkName)
+          .to.have.property('main')
+          .to.contain('styles-1.css');
+      })
+    );
   });
 });
