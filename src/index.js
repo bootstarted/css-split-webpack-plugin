@@ -109,6 +109,7 @@ export default class CSSSplitWebpackPlugin {
       index: i,
     });
     return postcss([chunk(this.options)]).process(input.source, {
+      from: undefined,
       map: {
         prev: input.map,
       },
