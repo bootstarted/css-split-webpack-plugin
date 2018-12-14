@@ -22,7 +22,7 @@ Simply add an instance of `CSSSplitWebpackPlugin` to your list of plugins in you
 
 ```javascript
 var ExtractTextPlugin = require('extract-text-webpack-plugin');
-var CSSSplitWebpackPlugin = require('../').default;
+var CSSSplitWebpackPlugin = require('css-split-webpack-plugin').default;
 
 module.exports = {
   entry: './index.js',
