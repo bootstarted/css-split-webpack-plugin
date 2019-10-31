@@ -1,5 +1,15 @@
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
-var CSSSplitWebpackPlugin = require('../../').default;
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CSSSplitWebpackPlugin = require('../../').default;
+
+const miniCssConfig = {
+  loader: MiniCssExtractPlugin.loader,
+  options: {
+    // you can specify a publicPath here
+    // by default it uses publicPath in webpackOptions.output
+    publicPath: '../',
+    hmr: process.env.NODE_ENV === 'development',
+  },
+};
 
 module.exports = {
   entry: './index.js',
@@ -10,16 +20,20 @@ module.exports = {
     filename: 'bundle.js',
   },
   module: {
-    loaders: [{
+    rules: [{
       test: /\.less$/,
-      loader: ExtractTextPlugin.extract(
-        'css?-url&-autoprefixer&sourceMap!less?sourceMap'
-      ),
+      use: [
+        miniCssConfig,
+        'css-loader',
+        'less-loader',
+      ],
     }],
   },
   devtool: 'source-map',
   plugins: [
-    new ExtractTextPlugin("styles.css"),
+    new MiniCssExtractPlugin({
+      filename: 'styles.css',
+    }),
     new CSSSplitWebpackPlugin({size: 3}),
   ],
 };
