@@ -1,5 +1,5 @@
 import _webpack from 'webpack';
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
+import MiniCssExtractPlugin  from 'mini-css-extract-plugin';
 import OptimizeCssPlugin from 'optimize-css-assets-webpack-plugin';
 import CSSSplitWebpackPlugin from '../../src';
 import path from 'path';
@@ -9,14 +9,15 @@ import {expect} from 'chai';
 const basic = path.join('.', 'basic', 'index.js');
 const less = path.join('.', 'less', 'index.js');
 
-const extract = ExtractTextPlugin.extract.length !== 1 ?
-  (a, b) => ExtractTextPlugin.extract(a, b) :
-  (fallbackLoader, loader) => loader ? ExtractTextPlugin.extract({
-    fallbackLoader,
-    loader,
-  }) : ExtractTextPlugin.extract({
-    loader: fallbackLoader,
-  });
+const miniCssConfig = {
+  loader: MiniCssExtractPlugin.loader,
+  options: {
+    // you can specify a publicPath here
+    // by default it uses publicPath in webpackOptions.output
+    publicPath: '../',
+    hmr: process.env.NODE_ENV === 'development',
+  },
+};
 
 const config = (options, entry = basic, {
   plugins,
@@ -31,21 +32,25 @@ const config = (options, entry = basic, {
       filename: 'bundle.js',
     },
     module: {
-      loaders: [{
+      rules: [{
         test: /\.css$/,
-        loader: extract(
-          'style-loader',
-          'css-loader?sourceMap'
-        ),
+        use: [
+          miniCssConfig,
+          'css-loader',
+        ],
       }, {
         test: /\.less$/,
-        loader: extract(
-          'css?-url&-autoprefixer&sourceMap!less?sourceMap'
-        ),
+        use: [
+          miniCssConfig,
+          'css-loader',
+          'less-loader',
+        ],
       }],
     },
     plugins: [
-      new ExtractTextPlugin('styles.css'),
+      new MiniCssExtractPlugin({
+        filename: 'styles.css',
+      }),
       new CSSSplitWebpackPlugin(options),
       ...(plugins || []),
     ],
@@ -133,7 +138,7 @@ describe('CSSSplitWebpackPlugin', () => {
     })
   );
   it('should handle cases when there are no source maps', () =>
-    webpack({size: 3}, less, {devtool: null}).then(({files}) => {
+    webpack({size: 3}, less, {devtool: false}).then(({files}) => {
       expect(files).to.not.have.property('styles-1.css.map');
     })
   );
@@ -171,7 +176,7 @@ describe('CSSSplitWebpackPlugin', () => {
         size: 3,
         defer: true,
       }, basic, {
-        devtool: null,
+        devtool: false,
         plugins: [
           new OptimizeCssPlugin(),
         ],
