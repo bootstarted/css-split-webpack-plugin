@@ -187,20 +187,35 @@ export default class CSSSplitWebpackPlugin {
       // Run on `emit` when user specifies the compiler phase
       // Due to the incorrect css split + optimization behavior
       // Expected: css split should happen after optimization
-      compiler.hooks.emit.tapAsync('css-split-emit', (compilation, done) => {
-        return this.chunksMapping(compilation, compilation.chunks, done);
-      });
+      if (compiler.hooks) {
+        compiler.hooks.emit.tapAsync('css-split-emit', (compilation, done) => {
+          return this.chunksMapping(compilation, compilation.chunks, done);
+        });
+      } else {
+        compiler.plugin('emit', (compilation, done) => {
+          return this.chunksMapping(compilation, compilation.chunks, done);
+        });
+      }
     } else {
       // Only run on `this-compilation` to avoid injecting the plugin into
       // sub-compilers as happens when using the `extract-text-webpack-plugin`.
-      compiler.hooks.thisCompilation.tap('css-split-this-compilation',
-        (compilation) => {
-          compilation.hooks.optimizeChunkAssets.tapAsync(
-            'css-split-optimize-chunk-assets',
-            (chunks, done) => {
-              return this.chunksMapping(compilation, chunks, done);
-            });
+      // eslint-disable-next-line no-lonely-if
+      if (compiler.hooks) {
+        compiler.hooks.thisCompilation.tap('css-split-this-compilation',
+          (compilation) => {
+            compilation.hooks.optimizeChunkAssets.tapAsync(
+              'css-split-optimize-chunk-assets',
+              (chunks, done) => {
+                return this.chunksMapping(compilation, chunks, done);
+              });
+          });
+      } else {
+        compiler.plugin('this-compilation', (compilation) => {
+          compilation.plugin('optimize-chunk-assets', (chunks, done) => {
+            return this.chunksMapping(compilation, chunks, done);
+          });
         });
+      }
     }
   }
 }
