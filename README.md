@@ -21,7 +21,7 @@ npm install --save css-split-webpack-plugin
 Simply add an instance of `CSSSplitWebpackPlugin` to your list of plugins in your webpack configuration file _after_ `ExtractTextPlugin`. That's it!
 
 ```javascript
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
+var MiniCssExtractPlugin = require('mini-css-extract-plugin');
 var CSSSplitWebpackPlugin = require('../').default;
 
 module.exports = {
@@ -35,11 +35,14 @@ module.exports = {
   module: {
     loaders: [{
       test: /\.css$/,
-      loader: ExtractTextPlugin.extract('style-loader', 'css-loader'),
+      use: [
+        MiniCssExtractPlugin.loader,
+        'css-loader',
+      ],
     }],
   },
   plugins: [
-    new ExtractTextPlugin('styles.css'),
+    new MiniCssExtractPlugin({filename: 'style.css'}),
     new CSSSplitWebpackPlugin({size: 4000}),
   ],
 };

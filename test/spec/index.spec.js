@@ -1,6 +1,5 @@
 import _webpack from 'webpack';
 import MiniCssExtractPlugin  from 'mini-css-extract-plugin';
-import OptimizeCssPlugin from 'optimize-css-assets-webpack-plugin';
 import CSSSplitWebpackPlugin from '../../src';
 import path from 'path';
 import MemoryFileSystem from 'memory-fs';
@@ -8,16 +7,6 @@ import {expect} from 'chai';
 
 const basic = path.join('.', 'basic', 'index.js');
 const less = path.join('.', 'less', 'index.js');
-
-const miniCssConfig = {
-  loader: MiniCssExtractPlugin.loader,
-  options: {
-    // you can specify a publicPath here
-    // by default it uses publicPath in webpackOptions.output
-    publicPath: '../',
-    hmr: process.env.NODE_ENV === 'development',
-  },
-};
 
 const config = (options, entry = basic, {
   plugins,
@@ -33,15 +22,9 @@ const config = (options, entry = basic, {
     },
     module: {
       rules: [{
-        test: /\.css$/,
+        test: /\.(css|less)$/,
         use: [
-          miniCssConfig,
-          'css-loader',
-        ],
-      }, {
-        test: /\.less$/,
-        use: [
-          miniCssConfig,
+          MiniCssExtractPlugin.loader,
           'css-loader',
           'less-loader',
         ],
@@ -67,10 +50,18 @@ const webpack = (options, inst, extra) => {
       expect(err).to.be.null;
       const stats = _stats.toJson();
       const files = {};
+      const readFile = (name) => compiler.outputFileSystem.readFileSync(
+        path.join(configuration.output.path, name)
+      );
       stats.assets.forEach((asset) => {
-        files[asset.name] = compiler.outputFileSystem.readFileSync(
-          path.join(configuration.output.path, asset.name)
-        );
+        // eslint-disable-next-line no-console
+        files[asset.name] = readFile(asset.name);
+
+        if (asset.related[0]) {
+          asset.related.forEach((related) => {
+            files[related.name] = readFile(related.name);
+          });
+        }
       });
       resolve({stats, files});
     });
@@ -175,12 +166,7 @@ describe('CSSSplitWebpackPlugin', () => {
       webpack({
         size: 3,
         defer: true,
-      }, basic, {
-        devtool: false,
-        plugins: [
-          new OptimizeCssPlugin(),
-        ],
-      }).then(({stats, files}) => {
+      }, basic, {devtool: false}).then(({stats, files}) => {
         expect(files).to.not.have.property('styles-1.css.map');
         expect(stats.assetsByChunkName)
           .to.have.property('main')

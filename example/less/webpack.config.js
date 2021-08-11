@@ -1,16 +1,6 @@
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CSSSplitWebpackPlugin = require('../../').default;
 
-const miniCssConfig = {
-  loader: MiniCssExtractPlugin.loader,
-  options: {
-    // you can specify a publicPath here
-    // by default it uses publicPath in webpackOptions.output
-    publicPath: '../',
-    hmr: process.env.NODE_ENV === 'development',
-  },
-};
-
 module.exports = {
   entry: './index.js',
   context: __dirname,
@@ -23,7 +13,7 @@ module.exports = {
     rules: [{
       test: /\.less$/,
       use: [
-        miniCssConfig,
+        MiniCssExtractPlugin.loader,
         'css-loader',
         'less-loader',
       ],

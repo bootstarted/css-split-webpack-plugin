@@ -3,6 +3,8 @@ import chunk from './chunk';
 import {SourceMapSource, RawSource} from 'webpack-sources';
 import {interpolateName} from 'loader-utils';
 
+const name = 'CSSSplitWebpackPlugin';
+
 /**
  * Detect if a file should be considered for CSS splitting.
  * @param {String} name Name of the file.
@@ -133,8 +135,8 @@ export default class CSSSplitWebpackPlugin {
   chunksMapping(compilation, chunks, done) {
     const assets = compilation.assets;
     const publicPath = strip(compilation.options.output.publicPath || './');
-    const promises = chunks.map((chunk) => {
-      const input = chunk.files.filter(isCSS);
+    const promises = Array.from(chunks).map((chunk) => {
+      const input = Array.from(chunk.files).filter(isCSS);
       const items = input.map((name) => this.file(name, assets[name]));
       return Promise.all(items).then((entries) => {
         entries.forEach((entry) => {
@@ -145,10 +147,12 @@ export default class CSSSplitWebpackPlugin {
           }
           // Inject the new files into the chunk.
           entry.chunks.forEach((file) => {
-            assets[file.name] = file;
-            chunk.files.push(file.name);
+            const name = file.name // RawSource
+              || file._name; // SourceMapSource
+            assets[name] = file;
+            chunk.files.add(name);
           });
-          const content = entry.chunks.map((file) => {
+          const content = Array.from(entry.chunks).map((file) => {
             return `@import "${publicPath}/${file._name}";`;
           }).join('\n');
           const imports = this.options.imports({
@@ -156,12 +160,12 @@ export default class CSSSplitWebpackPlugin {
             content,
           });
           if (!this.options.preserve) {
-            chunk.files.splice(chunk.files.indexOf(entry.file), 1);
+            chunk.files.delete(entry.file);
             delete assets[entry.file];
           }
           if (imports) {
             assets[imports] = new RawSource(content);
-            chunk.files.push(imports);
+            chunk.files.add(imports);
           }
         });
         return Promise.resolve();
@@ -187,35 +191,19 @@ export default class CSSSplitWebpackPlugin {
       // Run on `emit` when user specifies the compiler phase
       // Due to the incorrect css split + optimization behavior
       // Expected: css split should happen after optimization
-      if (compiler.hooks) {
-        compiler.hooks.emit.tapAsync('css-split-emit', (compilation, done) => {
-          return this.chunksMapping(compilation, compilation.chunks, done);
-        });
-      } else {
-        compiler.plugin('emit', (compilation, done) => {
-          return this.chunksMapping(compilation, compilation.chunks, done);
-        });
-      }
+      compiler.hooks.emit.tapAsync(name, (compilation, done) => {
+        return this.chunksMapping(compilation, compilation.chunks, done);
+      });
     } else {
       // Only run on `this-compilation` to avoid injecting the plugin into
-      // sub-compilers as happens when using the `extract-text-webpack-plugin`.
-      // eslint-disable-next-line no-lonely-if
-      if (compiler.hooks) {
-        compiler.hooks.thisCompilation.tap('css-split-this-compilation',
-          (compilation) => {
-            compilation.hooks.optimizeChunkAssets.tapAsync(
-              'css-split-optimize-chunk-assets',
-              (chunks, done) => {
-                return this.chunksMapping(compilation, chunks, done);
-              });
-          });
-      } else {
-        compiler.plugin('this-compilation', (compilation) => {
-          compilation.plugin('optimize-chunk-assets', (chunks, done) => {
+      // sub-compilers as happens when using the `mini-css-extract-plugin`.
+      compiler.hooks.thisCompilation.tap(name, (compilation) => {
+        // TODO there is no async hook for optimizing chunks
+        compilation.hooks.optimizeChunkAssets.tapAsync(
+          name, (chunks, done) => {
             return this.chunksMapping(compilation, chunks, done);
           });
-        });
-      }
+      });
     }
   }
 }
