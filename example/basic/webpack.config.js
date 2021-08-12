@@ -1,5 +1,5 @@
-var ExtractTextPlugin = require('extract-text-webpack-plugin');
-var CSSSplitWebpackPlugin = require('../../').default;
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CSSSplitWebpackPlugin = require('../../').default;
 
 module.exports = {
   entry: './index.js',
@@ -10,19 +10,19 @@ module.exports = {
     filename: 'bundle.js',
   },
   module: {
-    loaders: [{
+    rules: [{
       test: /\.css$/,
-      loader: ExtractTextPlugin.extract.length !== 1 ?
-        ExtractTextPlugin.extract('style-loader', 'css-loader') :
-        ExtractTextPlugin.extract({
-          fallbackLoader: 'style-loader',
-          loader: 'css-loader',
-        }),
+      use: [
+        MiniCssExtractPlugin.loader,
+        'css-loader',
+      ],
     }],
   },
   devtool: 'source-map',
   plugins: [
-    new ExtractTextPlugin("styles.css"),
+    new MiniCssExtractPlugin({
+      filename: 'styles.css',
+    }),
     new CSSSplitWebpackPlugin({size: 3, imports: true}),
   ],
 };

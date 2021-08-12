@@ -13,7 +13,7 @@
     "prepublish": "./node_modules/.bin/babel -s inline -d ./dist ./src --source-maps true",
     "test": "npm run lint && npm run spec",
     "lint": "eslint .",
-    "spec": "NODE_ENV=test ./node_modules/.bin/_mocha --timeout 5000 -r adana-dump --compilers js:babel-core/register -R spec --recursive test/spec/**/*.spec.js"
+    "spec": "cross-env NODE_ENV=test ./node_modules/.bin/_mocha --timeout 5000 -r adana-dump --compilers js:babel-core/register -R spec --recursive test/spec/**/*.spec.js"
   },
   "devDependencies": {
     "adana-cli": "^0.1.1",
@@ -27,24 +27,23 @@
     "babel-preset-env": "^1.6.0",
     "babel-preset-flow": "^6.23.0",
     "chai": "^3.5.0",
-    "css-loader": "^0.23.1",
+    "cross-env": "^6.0.3",
+    "css-loader": "^6.2.0",
     "eslint": "^4.6.0",
     "eslint-config-metalab": "^7.0.1",
-    "extract-text-webpack-plugin": "^1.0.1",
-    "less": "^2.7.1",
-    "less-loader": "^2.2.3",
+    "less": "^4.1.1",
+    "less-loader": "^10.0.1",
     "memory-fs": "^0.3.0",
+    "mini-css-extract-plugin": "^2.2.0",
     "mocha": "^2.4.5",
-    "optimize-css-assets-webpack-plugin": "^3.2.0",
-    "style-loader": "^0.13.1",
-    "webpack": "^1.13.0"
+    "webpack": "^5.50.0"
   },
   "dependencies": {
     "loader-utils": "^1.1.0",
     "postcss": "^6.0.14",
-    "webpack-sources": "^1.0.2"
+    "webpack-sources": "^3.2.0"
   },
   "peerDependencies": {
-    "webpack": ">=1"
+    "webpack": ">=5"
   }
 }

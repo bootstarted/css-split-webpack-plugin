@@ -1,6 +1,5 @@
 import _webpack from 'webpack';
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
-import OptimizeCssPlugin from 'optimize-css-assets-webpack-plugin';
+import MiniCssExtractPlugin  from 'mini-css-extract-plugin';
 import CSSSplitWebpackPlugin from '../../src';
 import path from 'path';
 import MemoryFileSystem from 'memory-fs';
@@ -8,15 +7,6 @@ import {expect} from 'chai';
 
 const basic = path.join('.', 'basic', 'index.js');
 const less = path.join('.', 'less', 'index.js');
-
-const extract = ExtractTextPlugin.extract.length !== 1 ?
-  (a, b) => ExtractTextPlugin.extract(a, b) :
-  (fallbackLoader, loader) => loader ? ExtractTextPlugin.extract({
-    fallbackLoader,
-    loader,
-  }) : ExtractTextPlugin.extract({
-    loader: fallbackLoader,
-  });
 
 const config = (options, entry = basic, {
   plugins,
@@ -31,21 +21,19 @@ const config = (options, entry = basic, {
       filename: 'bundle.js',
     },
     module: {
-      loaders: [{
-        test: /\.css$/,
-        loader: extract(
-          'style-loader',
-          'css-loader?sourceMap'
-        ),
-      }, {
-        test: /\.less$/,
-        loader: extract(
-          'css?-url&-autoprefixer&sourceMap!less?sourceMap'
-        ),
+      rules: [{
+        test: /\.(css|less)$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          'less-loader',
+        ],
       }],
     },
     plugins: [
-      new ExtractTextPlugin('styles.css'),
+      new MiniCssExtractPlugin({
+        filename: 'styles.css',
+      }),
       new CSSSplitWebpackPlugin(options),
       ...(plugins || []),
     ],
@@ -62,10 +50,18 @@ const webpack = (options, inst, extra) => {
       expect(err).to.be.null;
       const stats = _stats.toJson();
       const files = {};
+      const readFile = (name) => compiler.outputFileSystem.readFileSync(
+        path.join(configuration.output.path, name)
+      );
       stats.assets.forEach((asset) => {
-        files[asset.name] = compiler.outputFileSystem.readFileSync(
-          path.join(configuration.output.path, asset.name)
-        );
+        // eslint-disable-next-line no-console
+        files[asset.name] = readFile(asset.name);
+
+        if (asset.related[0]) {
+          asset.related.forEach((related) => {
+            files[related.name] = readFile(related.name);
+          });
+        }
       });
       resolve({stats, files});
     });
@@ -133,7 +129,7 @@ describe('CSSSplitWebpackPlugin', () => {
     })
   );
   it('should handle cases when there are no source maps', () =>
-    webpack({size: 3}, less, {devtool: null}).then(({files}) => {
+    webpack({size: 3}, less, {devtool: false}).then(({files}) => {
       expect(files).to.not.have.property('styles-1.css.map');
     })
   );
@@ -170,12 +166,7 @@ describe('CSSSplitWebpackPlugin', () => {
       webpack({
         size: 3,
         defer: true,
-      }, basic, {
-        devtool: null,
-        plugins: [
-          new OptimizeCssPlugin(),
-        ],
-      }).then(({stats, files}) => {
+      }, basic, {devtool: false}).then(({stats, files}) => {
         expect(files).to.not.have.property('styles-1.css.map');
         expect(stats.assetsByChunkName)
           .to.have.property('main')

@@ -2,3 +2,5 @@ node_modules
 *.log
 dist
 coverage
+package-lock.json
+

@@ -1,21 +1,9 @@
 sudo: false
 language: node_js
 node_js:
-  - 4
-  - 6
   - 8
-env:
-  - USE_WEBPACK2=false
-  - USE_WEBPACK2=true
-matrix:
-  exclude:
-    # TODO: Fix barf on peer dependencies with npm@2.
-    - env: USE_WEBPACK2=true
-      node_js: 4
-
-before_install:
-  - 'if [ "${USE_WEBPACK2}" == "true" ]; then npm install --save-dev webpack@2.1.0-beta.19 extract-text-webpack-plugin@2.0.0-beta.4; fi'
-
+  - 10
+  - 12
 after_script:
   - npm install coveralls
   - cat ./coverage/coverage.json | ./node_modules/.bin/adana --format lcov | ./node_modules/coveralls/bin/coveralls.js
